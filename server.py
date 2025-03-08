@@ -153,5 +153,22 @@ def get_topic_messages(topic: str, ctx: Context) -> str:
         consumer.close()
 
 
+@mcp.tool()
+def publish_message(topic: str, message: str, ctx: Context):
+    """Publish a message to Kafka broker"""
+    kafka_ctx = ctx.request_context.lifespan_context
+    producer = kafka_ctx.producer
+
+    try:
+        message_bytes = message.encode("utf-8")
+
+        producer.produce(topic, message_bytes)
+        producer.flush(timeout=10)
+
+        return f"Message successfully published to the topic: {topic}"
+    except Exception as e:
+        return f"Error publishing message: {message}"
+
+
 if __name__ == "__main__":
     mcp.run()
