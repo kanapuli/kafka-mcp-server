@@ -223,5 +223,29 @@ def delete_topic(topic: str, ctx: Context) -> str:
         return f"Error deleting the topic {topic}. err: {str(e)}"
 
 
+@mcp.prompt("monitor-kafka")
+def monitor_kafka_prompt() -> str:
+    """Create a prompt for monitoring kafka"""
+    return """I would like to monitor kafka cluster.
+Please help me:
+1. List all available topics
+2. For each topic show me details about its configuration
+3. If there are any topics with recent messages, show me those.
+"""
+
+
+@mcp.prompt("kafka-produce-message")
+def produce_message_prompt(topic: str = "") -> str:
+    """Create a prompt for producing a message for kafka topic"""
+    topic_part = f"to topic '{topic}'" if topic else ""
+    return f"""I need to send a message to {topic_part}
+Please help me:
+1. Check if the topic exists or guide me to create if needed
+2. Send the following message to the topic    
+
+[Your message here]
+"""
+
+
 if __name__ == "__main__":
     mcp.run()
