@@ -26,7 +26,6 @@ async def lifespan(server: FastMCP) -> AsyncIterator[KafkaContext]:
 
     config = {
         "bootstrap.servers": "localhost:9092",  # TODO: Make this configurable
-        "session.timeout.ms": 10000,
     }
     producer = confluent_kafka.Producer(config)
     admin_client = AdminClient(config)
@@ -55,9 +54,10 @@ mcp = FastMCP("Kafka Server", lifespan=lifespan)
 
 
 @mcp.resource("kafka://topics")
-def list_topics(ctx: Context) -> str:
+def list_topics() -> str:
     """List all available topics"""
-    kafka_ctx = ctx.request_context.lifespan_context
+    context = Context.current()
+    kafka_ctx = context.request_context.lifespan_context
     admin = kafka_ctx.admin_client
 
     topics_metadata = admin.list_topics(timeout=10)
@@ -78,9 +78,12 @@ def list_topics(ctx: Context) -> str:
 
 
 @mcp.resource("kafka://topic/{topic}/info")
-def get_topic_info(topic: str, ctx: Context) -> str:
+def get_topic_info(
+    topic: str,
+) -> str:
     """Get information about a specific topic"""
-    kafka_ctx = ctx.request_context.lifespan_context
+    context = Context.current()
+    kafka_ctx = context.request_context.lifespan_context
     admin = kafka_ctx.admin_client
 
     try:
@@ -110,9 +113,10 @@ def get_topic_info(topic: str, ctx: Context) -> str:
 
 
 @mcp.resource("kafka://topic/{topic}/messages")
-def get_topic_messages(topic: str, ctx: Context) -> str:
+def get_topic_messages(topic: str) -> str:
     """Get recent messages from a kafka topic(last 10 messages)"""
-    kafka_ctx = ctx.request_context.lifespan_context
+    context = Context.current()
+    kafka_ctx = context.request_context.lifespan_context
     consumer = kafka_ctx.consumer_factory()
 
     try:
@@ -154,9 +158,10 @@ def get_topic_messages(topic: str, ctx: Context) -> str:
 
 
 @mcp.tool()
-def publish_message(topic: str, message: str, ctx: Context):
+def publish_message(topic: str, message: str) -> str:
     """Publish a message to Kafka broker"""
-    kafka_ctx = ctx.request_context.lifespan_context
+    context = Context.current()
+    kafka_ctx = context.request_context.lifespan_context
     producer = kafka_ctx.producer
 
     try:
@@ -172,10 +177,11 @@ def publish_message(topic: str, message: str, ctx: Context):
 
 @mcp.tool()
 def create_topic(
-    topic: str, ctx: Context, num_partitions: int = 1, replication_factor: int = 1
+    topic: str, num_partitions: int = 1, replication_factor: int = 1
 ) -> str:
     """Create a topic in the Kafka broker"""
-    kafka_ctx = ctx.request_context.lifespan_context
+    context = Context.current()
+    kafka_ctx = context.request_context.lifespan_context
     admin = kafka_ctx.admin_client
 
     try:
@@ -202,8 +208,9 @@ def create_topic(
 
 
 @mcp.tool()
-def delete_topic(topic: str, ctx: Context) -> str:
-    kafka_ctx = ctx.request_context.lifespan_context
+def delete_topic(topic: str) -> str:
+    context = Context.current()
+    kafka_ctx = context.request_context.lifespan_context
     admin = kafka_ctx.admin_client
 
     try:
