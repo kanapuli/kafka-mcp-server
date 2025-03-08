@@ -53,5 +53,29 @@ async def lifespan(server: FastMCP) -> AsyncIterator[KafkaContext]:
 
 mcp = FastMCP("Kafka Server", lifespan=lifespan)
 
+
+@mcp.resource("kafka://topics")
+def list_topics(ctx: Context) -> str:
+    """List all available topics"""
+    kafka_ctx = ctx.request_context.lifespan_context
+    admin = kafka_ctx.admin_client
+
+    topics_metadata = admin.list_topics(timeout=10)
+    topics = list(topics_metadata.topics.keys())
+
+    if not topics:
+        return "No topics found"
+
+    return "\n".join(
+        [
+            "# Kafka Topics",
+            "",
+            "Available Topics:",
+            "",
+            *[f"- {topic}" for topic in topics],
+        ]
+    )
+
+
 if __name__ == "__main__":
     mcp.run()
