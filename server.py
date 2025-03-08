@@ -77,5 +77,37 @@ def list_topics(ctx: Context) -> str:
     )
 
 
+@mcp.resource("kafka://topic/{topic}/info")
+def get_topic_info(topic: str, ctx: Context) -> str:
+    """Get information about a specific topic"""
+    kafka_ctx = ctx.request_context.lifespan_context
+    admin = kafka_ctx.admin_client
+
+    try:
+        topics_metadata = admin.list_topics(topic=topic, timeout=10)
+
+        if topic not in topics_metadata:
+            return f"Topic {topic} does not exist"
+
+        topic_metadata = topics_metadata.topics[topic]
+        partitions = topic_metadata.partitions
+
+        return "\n".join(
+            [
+                f"# Topic: {topic}",
+                "",
+                f"Number of partitions: {partitions}",
+                "",
+                "## Partitions",
+                *[
+                    f"- Partition {p_id}: Leader: {p_meta.leader}, Replicas: {p_meta.replicas}"
+                    for p_id, p_meta in partitions.items()
+                ],
+            ]
+        )
+    except Exception as e:
+        return f"Error retrieving topic information: {str(e)}"
+
+
 if __name__ == "__main__":
     mcp.run()
