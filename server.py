@@ -170,5 +170,58 @@ def publish_message(topic: str, message: str, ctx: Context):
         return f"Error publishing message: {message}"
 
 
+@mcp.tool()
+def create_topic(
+    topic: str, ctx: Context, num_partitions: int = 1, replication_factor: int = 1
+) -> str:
+    """Create a topic in the Kafka broker"""
+    kafka_ctx = ctx.request_context.lifespan_context
+    admin = kafka_ctx.admin_client
+
+    try:
+        existing_topics = admin.list_topics(timeout=10)
+        if topic in existing_topics:
+            return f"Topic {topic} already exists in the broker"
+
+        new_topic = NewTopic(
+            topic,
+            num_partitions=num_partitions,
+            replication_factor=replication_factor,
+        )
+
+        result = admin.create_topic([new_topic])
+        for topic_name, future in result.items():
+            try:
+                future.result()
+                return f"Topic {topic} created successfully"
+            except Exception as e:
+                return f"Error creating topic: {topic}, err:{str(e)}"
+
+    except Exception as e:
+        return f"Error creating topic: {topic}, err: {str(e)}"
+
+
+@mcp.tool()
+def delete_topic(topic: str, ctx: Context) -> str:
+    kafka_ctx = ctx.request_context.lifespan_context
+    admin = kafka_ctx.admin_client
+
+    try:
+        existing_topics = admin.list_topics(timeout=10)
+        if topic not in existing_topics:
+            return f"Topic {topic} not found in the broker"
+
+        result = admin.delete_topics([topic])
+        for topic_name, future in result.items():
+            try:
+                future.result()
+                return f"Topic {topic} deleted successfully"
+            except Exception as e:
+                return f"Error while deleting the topic {topic}. err: {str(e)}"
+        return f"Topic deletion request submitted for topic {topic} but no response recieved"
+    except Exception as e:
+        return f"Error deleting the topic {topic}. err: {str(e)}"
+
+
 if __name__ == "__main__":
     mcp.run()
