@@ -109,5 +109,49 @@ def get_topic_info(topic: str, ctx: Context) -> str:
         return f"Error retrieving topic information: {str(e)}"
 
 
+@mcp.resource("kafka://topic/{topic}/messages")
+def get_topic_messages(topic: str, ctx: Context) -> str:
+    """Get recent messages from a kafka topic(last 10 messages)"""
+    kafka_ctx = ctx.request_context.lifespan_context
+    consumer = kafka_ctx.consumer_factory()
+
+    try:
+        consumer.subscribe([topic])
+
+        messages = []
+        timeout = 1.0  # 5 seconds
+        max_messages = 10
+
+        while len(messages) < max_messages:
+            msg = consumer.poll(timeout=timeout)
+
+            if msg is None:
+                # no more messages within timeout
+                break
+
+            if msg.error():
+                return f"Error while retrieving message: {msg.error()}"
+
+            try:
+                value = msg.value.decode("utf-8")
+                messages.append(value)
+            except Exception:
+                messages.append(f"[Binary data: {len(msg.value())} bytes]")
+
+        if not messages:
+            return f"No messages available in the topic: {topic}"
+
+        return "\n".join(
+            [
+                f"Recent messages from topic: {topic}",
+                "",
+                *[f"- Message {i + 1}: {msg}" for i, msg in enumerate(messages)],
+            ]
+        )
+
+    finally:
+        consumer.close()
+
+
 if __name__ == "__main__":
     mcp.run()
