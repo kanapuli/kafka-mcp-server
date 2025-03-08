@@ -1,0 +1,12 @@
+[project]
+name = "kafka-mcp-server"
+version = "0.1.0"
+description = "A Model Context Protocol server for basic Kafka operations"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "confluent-kafka>=2.8.2",
+    "fastmcp>=0.4.1",
+    "mcp[cli]>=1.3.0",
+    "pydantic>=2.10.6",
+]
