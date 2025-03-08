@@ -11,9 +11,6 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from mcp.server.fastmcp import FastMCP, Context
 
 
-mcp = FastMCP("Kafka Server")
-
-
 @dataclass
 class KafkaContext:
     """Container for Kafka clients that will be shared across requests"""
@@ -53,6 +50,8 @@ async def lifespan(server: FastMCP) -> AsyncIterator[KafkaContext]:
     finally:
         producer.flush()
 
+
+mcp = FastMCP("Kafka Server", lifespan=lifespan)
 
 if __name__ == "__main__":
     mcp.run()
